@@ -156,7 +156,7 @@
                             <option value="bi bi-tree" {{ old('icon', $category->icon ?? '') == 'bi bi-tree' ? 'selected' : '' }}>
                                 🌳 Tree (Pohon)
                             </option>
-                            <option value="bi bi-leaf" {{ old('icon', $category->icon ?? '') == 'bi bi-leaf' ? 'selected' : '' }}>
+                            <option value="bi bi-flower3" {{ old('icon', $category->icon ?? '') == 'bi bi-flower3' ? 'selected' : '' }}>
                                 🍃 Leaf (Daun)
                             </option>
                             <option value="bi bi-apple" {{ old('icon', $category->icon ?? '') == 'bi bi-apple' ? 'selected' : '' }}>
@@ -206,21 +206,19 @@
                     @enderror
                 </div>
 
-                @if(isset($category))
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   id="is_active" 
-                                   name="is_active" 
-                                   value="1"
-                                   {{ old('is_active', $category->is_active ?? true) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="is_active">
-                                <i class="bi bi-toggle-on me-1"></i>Kategori Aktif
-                            </label>
-                        </div>
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="is_active" 
+                               name="is_active" 
+                               value="1"
+                               {{ old('is_active', $category->is_active ?? true) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="is_active">
+                            Kategori Aktif
+                        </label>
                     </div>
-                @endif
+                </div>
 
                 <div class="d-flex justify-content-end gap-2">
                     <a href="{{ route('admin.waste.categories.index') }}" class="btn btn-secondary">

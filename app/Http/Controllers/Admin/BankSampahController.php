@@ -12,19 +12,19 @@ class BankSampahController extends Controller
     public function index(Request $request)
     {
         $query = BankSampah::query();
-        
+
         // Search functionality
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('address', 'like', '%' . $search . '%')
-                  ->orWhere('phone', 'like', '%' . $search . '%');
+                    ->orWhere('address', 'like', '%' . $search . '%')
+                    ->orWhere('phone', 'like', '%' . $search . '%');
             });
         }
-        
+
         $bankSampah = $query->orderBy('name')->paginate(15);
-        
+
         return view('admin.bank-sampah.index', compact('bankSampah'));
     }
 
@@ -69,7 +69,7 @@ class BankSampahController extends Controller
     public function update(Request $request, $id)
     {
         $bankSampah = BankSampah::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
@@ -86,6 +86,7 @@ class BankSampahController extends Controller
         ]);
 
         $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
 
         if ($request->hasFile('photo')) {
             if ($bankSampah->photo) {
@@ -102,11 +103,11 @@ class BankSampahController extends Controller
     public function destroy($id)
     {
         $bankSampah = BankSampah::findOrFail($id);
-        
+
         if ($bankSampah->photo) {
             Storage::disk('public')->delete($bankSampah->photo);
         }
-        
+
         $bankSampah->delete();
 
         return redirect()->route('admin.bank-sampah.index')->with('success', 'Bank Sampah berhasil dihapus!');

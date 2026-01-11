@@ -29,7 +29,27 @@
                         <h3 class="mb-0 text-dark">{{ number_format($totalWaste, 2) }} kg</h3>
                     </div>
                     <hr>
-                    @if(isset($wasteTypeStats) && count($wasteTypeStats) > 0)
+                    <!-- Search Form -->
+                    <form action="{{ route('admin.statistics.index') }}" method="GET" class="mb-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" 
+                                   name="search" 
+                                   class="form-control border-start-0" 
+                                   placeholder="Cari jenis sampah..." 
+                                   value="{{ request('search') }}">
+                            @if(request('search'))
+                                <a href="{{ route('admin.statistics.index') }}" class="btn btn-outline-secondary border-start-0 border-end-0" title="Hapus Filter">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                            @endif
+                            <button class="btn btn-outline-secondary" type="submit">Cari</button>
+                        </div>
+                    </form>
+
+                    @if(isset($wasteTypeStats) && $wasteTypeStats->count() > 0)
                         @foreach($wasteTypeStats as $index => $stat)
                             @php
                                 $wasteType = $stat['type'];
@@ -44,10 +64,12 @@
                                 $defaultIcons = ['bi-bar-chart', 'bi-flower1', 'bi-recycle', 'bi-exclamation-triangle', 'bi-arrow-repeat', 'bi-tag'];
                                 $icon = $wasteType->icon ?? $defaultIcons[$index % count($defaultIcons)];
                             @endphp
-                            <div class="{{ !$loop->last ? 'mb-4' : '' }}">
-                                <label class="form-label text-muted mb-1 d-flex align-items-center">
-                                    <i class="{{ $icon }} me-1"></i>
-                                    {{ $wasteType->name }}
+                            <div class="mb-4">
+                                <label class="form-label text-muted mb-1 d-flex align-items-center justify-content-between">
+                                    <span>
+                                        <i class="{{ $icon }} me-1"></i>
+                                        {{ $wasteType->name }}
+                                    </span>
                                 </label>
                                 <h3 class="mb-0" style="color: {{ $textColor }};">
                                     {{ number_format($amount, 2) }} kg
@@ -59,34 +81,46 @@
                                 @endif
                             </div>
                             @if(!$loop->last)
-                                <hr>
+                                <hr class="my-3 text-muted opacity-25">
                             @endif
                         @endforeach
+
+                        <!-- Pagination -->
+                        <div class="mt-4">
+                            {{ $wasteTypeStats->withQueryString()->links('pagination::bootstrap-5') }}
+                        </div>
                     @else
-                        {{-- Fallback to old display if no waste types found --}}
-                        <div class="mb-4">
-                            <label class="form-label text-muted mb-1">
-                                <i class="bi bi-flower1 me-1"></i>Sampah Organik
-                            </label>
-                            <h3 class="mb-0 text-success">{{ number_format($organicWaste, 2) }} kg</h3>
-                            @if($totalWaste > 0)
-                                <small class="text-muted">
-                                    {{ number_format(($organicWaste / $totalWaste) * 100, 1) }}% dari total
-                                </small>
-                            @endif
-                        </div>
-                        <hr>
-            <div>
-                            <label class="form-label text-muted mb-1">
-                                <i class="bi bi-recycle me-1"></i>Sampah Anorganik
-                            </label>
-                            <h3 class="mb-0 text-primary">{{ number_format($anorganicWaste, 2) }} kg</h3>
-                            @if($totalWaste > 0)
-                                <small class="text-muted">
-                                    {{ number_format(($anorganicWaste / $totalWaste) * 100, 1) }}% dari total
-                                </small>
-                            @endif
-                        </div>
+                        @if(request('search'))
+                            <div class="text-center py-4">
+                                <i class="bi bi-search display-6 text-muted d-block mb-2 opacity-50"></i>
+                                <p class="text-muted mb-0">Tidak ditemukan jenis sampah "{{ request('search') }}"</p>
+                            </div>
+                        @else
+                            {{-- Fallback to old display if no waste types found --}}
+                            <div class="mb-4">
+                                <label class="form-label text-muted mb-1">
+                                    <i class="bi bi-flower1 me-1"></i>Sampah Organik
+                                </label>
+                                <h3 class="mb-0 text-success">{{ number_format($organicWaste, 2) }} kg</h3>
+                                @if($totalWaste > 0)
+                                    <small class="text-muted">
+                                        {{ number_format(($organicWaste / $totalWaste) * 100, 1) }}% dari total
+                                    </small>
+                                @endif
+                            </div>
+                            <hr>
+                            <div>
+                                <label class="form-label text-muted mb-1">
+                                    <i class="bi bi-recycle me-1"></i>Sampah Anorganik
+                                </label>
+                                <h3 class="mb-0 text-primary">{{ number_format($anorganicWaste, 2) }} kg</h3>
+                                @if($totalWaste > 0)
+                                    <small class="text-muted">
+                                        {{ number_format(($anorganicWaste / $totalWaste) * 100, 1) }}% dari total
+                                    </small>
+                                @endif
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>

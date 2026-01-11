@@ -36,7 +36,9 @@ class CategoryController extends Controller
             'icon' => 'nullable|string',
         ]);
 
-        WasteCategory::create($request->all());
+        $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
+        WasteCategory::create($data);
 
         return redirect()->route('admin.waste.categories.index')->with('success', 'Kategori berhasil ditambahkan!');
     }
@@ -44,7 +46,7 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $category = WasteCategory::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:255|unique:waste_categories,name,' . $id,
             'waste_type' => 'nullable|exists:waste_types,slug',
@@ -55,7 +57,9 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $category->update($request->all());
+        $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
+        $category->update($data);
 
         return redirect()->route('admin.waste.categories.index')->with('success', 'Kategori berhasil diupdate!');
     }

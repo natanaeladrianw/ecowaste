@@ -47,6 +47,7 @@ class WasteTypeController extends Controller
         $data = $request->all();
         $data['slug'] = Str::slug($request->name);
         $data['sort_order'] = $request->sort_order ?? 0;
+        $data['is_active'] = $request->has('is_active');
 
         WasteType::create($data);
 
@@ -76,7 +77,7 @@ class WasteTypeController extends Controller
     public function update(Request $request, string $id)
     {
         $wasteType = WasteType::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:255|unique:waste_types,name,' . $id,
             'description' => 'nullable|string',
@@ -89,6 +90,7 @@ class WasteTypeController extends Controller
         $data = $request->all();
         $data['slug'] = Str::slug($request->name);
         $data['sort_order'] = $request->sort_order ?? 0;
+        $data['is_active'] = $request->has('is_active');
 
         $wasteType->update($data);
 
@@ -101,14 +103,14 @@ class WasteTypeController extends Controller
     public function destroy(string $id)
     {
         $wasteType = WasteType::findOrFail($id);
-        
+
         // Check if there are categories using this waste type
         $categoriesCount = $wasteType->categories()->count();
         if ($categoriesCount > 0) {
             return redirect()->route('admin.waste-types.index')
                 ->with('error', "Tidak dapat menghapus tipe sampah karena masih digunakan oleh {$categoriesCount} kategori!");
         }
-        
+
         $wasteType->delete();
 
         return redirect()->route('admin.waste-types.index')->with('success', 'Tipe Sampah berhasil dihapus!');

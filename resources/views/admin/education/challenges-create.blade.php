@@ -199,7 +199,7 @@
                                    value="1"
                                    {{ old('is_active', $challenge->is_active ?? true) ? 'checked' : '' }}>
                             <label class="form-check-label" for="is_active">
-                                <i class="bi bi-toggle-on me-1"></i>Aktifkan Challenge
+                                Aktifkan Challenge
                             </label>
                         </div>
                         <small class="form-text text-muted">Challenge yang aktif akan ditampilkan kepada user</small>

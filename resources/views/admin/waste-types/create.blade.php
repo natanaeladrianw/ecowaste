@@ -148,7 +148,7 @@
                             <option value="bi bi-tree" {{ old('icon', $wasteType->icon ?? '') == 'bi bi-tree' ? 'selected' : '' }}>
                                 🌳 Tree (Pohon)
                             </option>
-                            <option value="bi bi-leaf" {{ old('icon', $wasteType->icon ?? '') == 'bi bi-leaf' ? 'selected' : '' }}>
+                            <option value="bi bi-flower3" {{ old('icon', $wasteType->icon ?? '') == 'bi bi-flower3' ? 'selected' : '' }}>
                                 🍃 Leaf (Daun)
                             </option>
                             <option value="bi bi-apple" {{ old('icon', $wasteType->icon ?? '') == 'bi bi-apple' ? 'selected' : '' }}>
@@ -194,7 +194,7 @@
                                value="1"
                                {{ old('is_active', $wasteType->is_active ?? true) ? 'checked' : '' }}>
                         <label class="form-check-label" for="is_active">
-                            <i class="bi bi-toggle-on me-1"></i>Tipe Sampah Aktif
+                            Tipe Sampah Aktif
                         </label>
                     </div>
                 </div>

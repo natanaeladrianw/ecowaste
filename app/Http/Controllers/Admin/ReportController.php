@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -25,7 +26,7 @@ class ReportController extends Controller
     public function generate(Request $request)
     {
         $type = $request->type ?? 'monthly';
-        
+
         // Set date range based on type
         if ($type === 'daily') {
             $startDate = Carbon::today()->startOfDay();
@@ -50,15 +51,15 @@ class ReportController extends Controller
             'period' => $type,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'total_waste' => $wastes->sum(function($waste) {
+            'total_waste' => $wastes->sum(function ($waste) {
                 return $waste->unit === 'gram' ? $waste->amount / 1000 : $waste->amount;
             }),
             'total_transactions' => $wastes->count(),
             'total_points' => $wastes->sum('points_earned'),
-            'by_category' => $wastes->groupBy('category_id')->map(function($group) {
+            'by_category' => $wastes->groupBy('category_id')->map(function ($group) {
                 return [
                     'category' => $group->first()->category->name ?? 'Unknown',
-                    'total_kg' => $group->sum(function($waste) {
+                    'total_kg' => $group->sum(function ($waste) {
                         return $waste->unit === 'gram' ? $waste->amount / 1000 : $waste->amount;
                     }),
                     'count' => $group->count(),
@@ -72,7 +73,7 @@ class ReportController extends Controller
     public function export(Request $request)
     {
         $type = $request->type ?? 'monthly';
-        
+
         // Set date range based on type
         if ($type === 'daily') {
             $startDate = Carbon::today()->startOfDay();
@@ -92,6 +93,18 @@ class ReportController extends Controller
             ->with(['user', 'category', 'bankSampah'])
             ->orderBy('created_at', 'desc')
             ->get();
+
+        if ($request->format === 'pdf') {
+            $data = [
+                'wastes' => $wastes,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'period' => $type
+            ];
+
+            $pdf = Pdf::loadView('admin.reports.pdf', $data);
+            return $pdf->download('Laporan_Sampah_' . $type . '_' . date('Y-m-d_His') . '.pdf');
+        }
 
         // Create new Spreadsheet
         $spreadsheet = new Spreadsheet();
@@ -118,7 +131,7 @@ class ReportController extends Controller
         } elseif ($type === 'monthly') {
             $periodText = 'Bulanan: ' . Carbon::now()->format('F Y');
         }
-        
+
         $sheet->setCellValue('A2', 'Periode: ' . $periodText);
         $sheet->mergeCells('A2:G2');
         $sheet->getStyle('A2')->getFont()->setSize(12);
@@ -153,22 +166,22 @@ class ReportController extends Controller
             $sheet->setCellValue('B' . $row, $waste->created_at->format('d/m/Y H:i'));
             $sheet->setCellValue('C' . $row, $waste->user->name ?? 'N/A');
             $sheet->setCellValue('D' . $row, $waste->category->name ?? 'N/A');
-            
+
             $weight = $waste->unit === 'gram' ? $waste->amount / 1000 : $waste->amount;
             $sheet->setCellValue('E' . $row, $weight);
             $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-            
+
             $bankSampahName = $waste->bankSampah ? ($waste->bankSampah->name . ' - ' . ($waste->bankSampah->location_name ?? Str::limit($waste->bankSampah->address, 40))) : '-';
             $sheet->setCellValue('F' . $row, $bankSampahName);
-            
+
             $sheet->setCellValue('G' . $row, $waste->points_earned ?? 0);
-            
+
             // Add borders
             foreach (range('A', 'G') as $col) {
                 $sheet->getStyle($col . $row)->getBorders()->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN);
             }
-            
+
             $row++;
         }
 
@@ -178,21 +191,21 @@ class ReportController extends Controller
         $sheet->mergeCells('A' . $row . ':D' . $row);
         $sheet->getStyle('A' . $row)->getFont()->setBold(true);
         $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        
-        $totalWaste = $wastes->sum(function($waste) {
+
+        $totalWaste = $wastes->sum(function ($waste) {
             return $waste->unit === 'gram' ? $waste->amount / 1000 : $waste->amount;
         });
         $sheet->setCellValue('E' . $row, $totalWaste);
         $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
         $sheet->getStyle('E' . $row)->getFont()->setBold(true);
-        
+
         $sheet->setCellValue('F' . $row, 'Total Transaksi: ' . $wastes->count());
         $sheet->getStyle('F' . $row)->getFont()->setBold(true);
-        
+
         $totalPoints = $wastes->sum('points_earned');
         $sheet->setCellValue('G' . $row, $totalPoints);
         $sheet->getStyle('G' . $row)->getFont()->setBold(true);
-        
+
         // Style summary row
         $sheet->getStyle('A' . $row . ':G' . $row)->getFill()
             ->setFillType(Fill::FILL_SOLID)
@@ -216,11 +229,11 @@ class ReportController extends Controller
 
         // Create writer
         $writer = new Xlsx($spreadsheet);
-        
+
         // Create temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'excel_');
         $writer->save($tempFile);
-        
+
         // Return download response with proper headers
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

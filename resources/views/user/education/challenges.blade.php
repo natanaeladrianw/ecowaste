@@ -74,42 +74,53 @@
                                         
                                         <div class="card-body">
                                             <!-- Desktop Layout -->
+                                            <!-- Desktop Layout -->
                                             <div class="d-none d-md-block">
-                                                <div class="row g-3">
-                                                    <div class="col-md-12 col-lg-4">
-                                                        <div class="d-flex align-items-center mb-3">
-                                                            <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
-                                                                <i class="bi bi-trophy-fill text-success fs-4"></i>
-                                                            </div>
+                                                <div class="d-flex align-items-start">
+                                                    <!-- Icon Section -->
+                                                    <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3 flex-shrink-0">
+                                                        <i class="bi bi-trophy-fill text-success fs-4"></i>
+                                                    </div>
+                                                    
+                                                    <!-- Content Section -->
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-start mb-2">
                                                             <div>
-                                                                <h6 class="card-title mb-0 fw-bold">{{ $challenge->title }}</h6>
-                                                                <small class="text-muted">
+                                                                <h6 class="card-title fw-bold mb-1">{{ $challenge->title }}</h6>
+                                                                <small class="text-muted d-block mb-2">
                                                                     <i class="bi bi-calendar3 me-1"></i>
                                                                     {{ \Carbon\Carbon::parse($challenge->start_date)->format('d M Y') }} - 
                                                                     {{ \Carbon\Carbon::parse($challenge->end_date)->format('d M Y') }}
                                                                 </small>
                                                             </div>
+                                                            <div class="text-end ms-3">
+                                                                <span class="badge bg-success fs-6 mb-1">
+                                                                    <i class="bi bi-star-fill me-1"></i>
+                                                                    {{ $challenge->points_reward }} Poin
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="col-md-12 col-lg-8">
+
                                                         <p class="card-text text-muted small mb-3">
                                                             {{ $challenge->description }}
                                                         </p>
                                                         
                                                         @if($challenge->targetCategory)
-                                                            <span class="badge bg-primary mb-3">
-                                                                <i class="bi bi-tag me-1"></i>{{ $challenge->targetCategory->name }}
-                                                            </span>
+                                                            <div class="mb-3">
+                                                                <span class="badge bg-primary">
+                                                                    <i class="bi bi-tag me-1"></i>{{ $challenge->targetCategory->name }}
+                                                                </span>
+                                                            </div>
                                                         @endif
                                                         
-                                                        <div class="mb-3">
+                                                        <div class="mb-3 p-3 bg-light rounded">
                                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                <small class="text-muted fw-bold">Progress</small>
-                                                                <small class="text-muted">
+                                                                <small class="fw-bold text-dark">Progress Saya</small>
+                                                                <small class="text-muted fw-bold">
                                                                     {{ number_format($currentProgress, 2) }}/{{ $targetAmount }} {{ $challenge->target_unit ?? 'kg' }}
                                                                 </small>
                                                             </div>
-                                                            <div class="progress" style="height: 10px;">
+                                                            <div class="progress mb-2" style="height: 10px;">
                                                                 <div class="progress-bar {{ $isCompleted ? 'bg-success' : 'bg-warning' }}" 
                                                                      role="progressbar" 
                                                                      style="width: {{ $progressPercentage }}%"
@@ -118,33 +129,31 @@
                                                                      aria-valuemax="100">
                                                                 </div>
                                                             </div>
-                                                            <small class="text-muted">{{ number_format($progressPercentage, 1) }}% selesai</small>
+                                                            <div class="d-flex justify-content-between">
+                                                                <small class="text-muted">{{ number_format($progressPercentage, 1) }}% selesai</small>
+                                                                @if($isCompleted)
+                                                                    <small class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Target Tercapai</small>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                         
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <div>
-                                                                <small class="text-success fw-bold">
-                                                                    <i class="bi bi-star-fill me-1"></i>
-                                                                    {{ $challenge->points_reward }} Poin
-                                                                </small>
-                                                            </div>
+                                                        <div class="d-flex justify-content-end">
                                                             @if(!$isCompleted)
                                                                 <form action="{{ route('user.education.challenges.complete', $challenge->id) }}" 
                                                                       method="POST" 
                                                                       onsubmit="return confirm('Apakah Anda yakin challenge ini sudah selesai?')">
                                                                     @csrf
                                                                     <button type="submit" 
-                                                                            class="btn btn-sm btn-success"
-                                                                            {{ $progressPercentage < 100 ? 'disabled' : '' }}
-                                                                            title="{{ $progressPercentage < 100 ? 'Progress belum mencapai 100%' : 'Klaim reward' }}">
+                                                                            class="btn btn-success"
+                                                                            {{ $progressPercentage < 100 ? 'disabled' : '' }}>
                                                                         <i class="bi bi-check-circle me-1"></i>
                                                                         {{ $progressPercentage >= 100 ? 'Klaim Reward' : 'Belum Selesai' }}
                                                                     </button>
                                                                 </form>
                                                             @else
-                                                                <span class="badge bg-success">
-                                                                    <i class="bi bi-check-circle me-1"></i>Diselesaikan
-                                                                </span>
+                                                                <button class="btn btn-outline-success" disabled>
+                                                                    <i class="bi bi-check-circle-fill me-1"></i>Reward Telah Diklaim
+                                                                </button>
                                                             @endif
                                                         </div>
                                                     </div>

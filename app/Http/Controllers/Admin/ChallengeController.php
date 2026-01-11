@@ -16,9 +16,9 @@ class ChallengeController extends Controller
         // Search functionality
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', '%' . $search . '%')
-                  ->orWhere('description', 'like', '%' . $search . '%');
+                    ->orWhere('description', 'like', '%' . $search . '%');
             });
         }
 
@@ -31,8 +31,8 @@ class ChallengeController extends Controller
         if ($request->has('status') && $request->status !== '') {
             if ($request->status == 'active') {
                 $query->where('is_active', true)
-                      ->where('start_date', '<=', now())
-                      ->where('end_date', '>=', now());
+                    ->where('start_date', '<=', now())
+                    ->where('end_date', '>=', now());
             } elseif ($request->status == 'inactive') {
                 $query->where('is_active', false);
             } elseif ($request->status == 'upcoming') {
@@ -69,7 +69,9 @@ class ChallengeController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        Challenge::create($request->all());
+        $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
+        Challenge::create($data);
 
         return redirect()->route('admin.education.challenges.index')->with('success', 'Challenge berhasil ditambahkan!');
     }
@@ -84,7 +86,7 @@ class ChallengeController extends Controller
     public function update(Request $request, $id)
     {
         $challenge = Challenge::findOrFail($id);
-        
+
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -98,7 +100,9 @@ class ChallengeController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $challenge->update($request->all());
+        $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
+        $challenge->update($data);
 
         return redirect()->route('admin.education.challenges.index')->with('success', 'Challenge berhasil diupdate!');
     }

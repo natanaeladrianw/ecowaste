@@ -159,7 +159,7 @@
                                    value="1"
                                    {{ old('is_active', $bankSampah->is_active) ? 'checked' : '' }}>
                             <label class="form-check-label" for="is_active">
-                                <i class="bi bi-toggle-on me-1"></i>Status Aktif
+                                Status Aktif
                             </label>
                         </div>
                         <small class="form-text text-muted">Aktifkan atau nonaktifkan bank sampah ini</small>

@@ -11,6 +11,57 @@
         </h2>
     </div>
 
+    <!-- Statistics Graph Section - MOVED TO TOP -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bar-chart-line me-2"></i>Grafik Statistik
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            <!-- Period Filter -->
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" id="btnDaily" onclick="changePeriod('daily')">
+                                    <i class="bi bi-calendar-day me-1"></i>Harian
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="btnWeekly" onclick="changePeriod('weekly')">
+                                    <i class="bi bi-calendar-week me-1"></i>Mingguan
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="btnMonthly" onclick="changePeriod('monthly')">
+                                    <i class="bi bi-calendar-month me-1"></i>Bulanan
+                                </button>
+                            </div>
+                            <!-- Data Type Filter -->
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-success active" id="btnWaste" onclick="changeDataType('waste')">
+                                    <i class="bi bi-trash me-1"></i>Sampah
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" id="btnTransactions" onclick="changeDataType('transactions')">
+                                    <i class="bi bi-receipt me-1"></i>Transaksi
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="btnUsers" onclick="changeDataType('users')">
+                                    <i class="bi bi-people me-1"></i>User Baru
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted" id="periodLabel">
+                            <i class="bi bi-info-circle me-1"></i>Menampilkan data 7 hari terakhir
+                        </small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 350px; position: relative;">
+                        <canvas id="statisticsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <!-- Waste Statistics -->
@@ -152,9 +203,9 @@
                                 {{ number_format(($activeUsers / $totalUsers) * 100, 1) }}% dari total
                             </small>
                         @endif
-            </div>
+                    </div>
                     <hr>
-            <div>
+                    <div>
                         <label class="form-label text-muted mb-1">
                             <i class="bi bi-person-plus me-1"></i>User Baru (Bulan Ini)
                         </label>
@@ -163,7 +214,7 @@
                             Periode: {{ now()->format('F Y') }}
                         </small>
                     </div>
-            </div>
+                </div>
             </div>
         </div>
     </div>
@@ -240,38 +291,212 @@
                                     @endforeach
                                 </tbody>
                             </table>
-            </div>
+                        </div>
                     @else
                         <div class="text-center py-4">
                             <i class="bi bi-inbox display-6 text-muted d-block mb-2"></i>
                             <p class="text-muted">Belum ada data kategori</p>
-            </div>
+                        </div>
                     @endif
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-    <!-- Statistics Graph Section -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card admin-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-bar-chart-line me-2"></i>Grafik Statistik
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="bg-light rounded p-5 text-center" style="min-height: 300px;">
-                        <i class="bi bi-graph-up display-4 text-muted d-block mb-3"></i>
-                        <h5 class="text-muted mb-2">Grafik Statistik</h5>
-                        <p class="text-muted mb-0">Grafik akan ditampilkan di sini</p>
-                        <small class="text-muted">Fitur grafik interaktif akan segera hadir</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@push('scripts')
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    // Data from controller
+    const dailyStats = @json($dailyStats);
+    const weeklyStats = @json($weeklyStats);
+    const monthlyStats = @json($monthlyStats);
+    
+    // Current state
+    let currentPeriod = 'daily';
+    let currentDataType = 'waste';
+    let currentChart = null;
+    
+    const ctx = document.getElementById('statisticsChart').getContext('2d');
+
+    // Period labels
+    const periodLabels = {
+        daily: 'Menampilkan data 7 hari terakhir',
+        weekly: 'Menampilkan data 4 minggu terakhir',
+        monthly: 'Menampilkan data 6 bulan terakhir'
+    };
+
+    // Get data based on period
+    function getDataByPeriod(period) {
+        switch(period) {
+            case 'daily':
+                return dailyStats;
+            case 'weekly':
+                return weeklyStats;
+            case 'monthly':
+                return monthlyStats;
+            default:
+                return dailyStats;
+        }
+    }
+
+    // Chart colors
+    const chartColors = {
+        waste: {
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+        },
+        transactions: {
+            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+            borderColor: 'rgba(0, 123, 255, 1)',
+        },
+        users: {
+            backgroundColor: 'rgba(23, 162, 184, 0.2)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+        }
+    };
+
+    // Chart labels
+    const chartLabels = {
+        waste: 'Total Sampah (kg)',
+        transactions: 'Jumlah Transaksi',
+        users: 'User Baru'
+    };
+
+    function createChart() {
+        const data = getDataByPeriod(currentPeriod);
+        const labels = data.map(item => item.label);
+        const values = data.map(item => item[currentDataType]);
+        const colors = chartColors[currentDataType];
+        
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
+        currentChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: chartLabels[currentDataType],
+                    data: values,
+                    backgroundColor: colors.backgroundColor,
+                    borderColor: colors.borderColor,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: colors.borderColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Update period label
+        document.getElementById('periodLabel').innerHTML = 
+            '<i class="bi bi-info-circle me-1"></i>' + periodLabels[currentPeriod];
+    }
+
+    function changePeriod(period) {
+        currentPeriod = period;
+        
+        // Update button states
+        document.getElementById('btnDaily').classList.remove('active');
+        document.getElementById('btnWeekly').classList.remove('active');
+        document.getElementById('btnMonthly').classList.remove('active');
+        document.getElementById('btn' + period.charAt(0).toUpperCase() + period.slice(1)).classList.add('active');
+
+        createChart();
+    }
+
+    function changeDataType(type) {
+        currentDataType = type;
+        
+        // Update button states - reset all to outline
+        document.getElementById('btnWaste').className = 'btn btn-outline-success';
+        document.getElementById('btnTransactions').className = 'btn btn-outline-primary';
+        document.getElementById('btnUsers').className = 'btn btn-outline-info';
+        
+        // Set active button with filled style
+        if (type === 'waste') {
+            document.getElementById('btnWaste').className = 'btn btn-success active';
+        } else if (type === 'transactions') {
+            document.getElementById('btnTransactions').className = 'btn btn-primary active';
+        } else if (type === 'users') {
+            document.getElementById('btnUsers').className = 'btn btn-info active';
+        }
+
+        createChart();
+    }
+
+    // Initialize chart on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        createChart();
+    });
+</script>
+@endpush
 @endsection
-

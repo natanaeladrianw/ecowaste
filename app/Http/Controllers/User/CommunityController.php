@@ -7,6 +7,7 @@ use App\Models\ForumPost;
 use App\Models\ForumComment;
 use App\Models\ForumPostLike;
 use App\Models\Achievement;
+use App\Models\Waste;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -65,7 +66,7 @@ class CommunityController extends Controller
             $post->increment('likes_count');
             $message = 'Post di-like';
         }
-        
+
         return back()->with('success', $message);
     }
 
@@ -93,12 +94,66 @@ class CommunityController extends Controller
     public function achievements()
     {
         $user = Auth::user();
-        
+
         $achievements = Achievement::where('user_id', $user->id)
             ->orderBy('is_completed', 'desc')
             ->orderBy('completed_at', 'desc')
             ->get();
 
         return view('user.community.achievements', compact('achievements'));
+    }
+
+    public function shareAchievement($id)
+    {
+        $achievement = Achievement::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->where('is_completed', true)
+            ->firstOrFail();
+
+        // Create post content
+        $title = 'Saya baru saja menyelesaikan tantangan: ' . $achievement->title . '!';
+        $content = "Halo teman-teman komunitas! \n\nSaya sangat senang bisa berbagi bahwa saya baru saja menyelesaikan tantangan '" . $achievement->title . "'.\n\n" .
+            ($achievement->description ? $achievement->description . "\n\n" : "") .
+            "Ayo ikutan tantangan ini dan jaga lingkungan kita bersama! 🌱💪";
+
+        // Check if already shared (optional, to prevent spam)
+        // For now we allow multiple shares or maybe just create one
+
+        ForumPost::create([
+            'user_id' => Auth::id(),
+            'title' => $title,
+            'content' => $content,
+            'category' => 'Pencapaian',
+        ]);
+
+        return redirect()->route('user.community.forum')->with('success', 'Pencapaian berhasil dibagikan ke komunitas!');
+    }
+
+    public function shareTransaction($id)
+    {
+        $waste = Waste::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->with('category')
+            ->firstOrFail();
+
+        // Format amount
+        $amount = $waste->unit === 'gram' ? ($waste->amount / 1000) . ' kg' : $waste->amount . ' ' . $waste->unit;
+        $categoryName = $waste->category ? $waste->category->name : 'Lainnya';
+
+        // Create post content
+        $title = 'Saya baru menyetor sampah ' . $categoryName . '!';
+        $content = "Halo sobat EcoWaste! 👋\n\n" .
+            "Hari ini saya baru saja menyetor sampah jenis *" . $categoryName . "* (" . $waste->type . ") sebanyak **" . $amount . "**.\n\n" .
+            "Senang rasanya bisa berkontribusi menjaga lingkungan. Yuk, kalian juga jangan lupa setor sampah kalian! ♻️🌍\n\n" .
+            "#EcoWaste #PeduliLingkungan #" . str_replace(' ', '', $categoryName);
+
+        ForumPost::create([
+            'user_id' => Auth::id(),
+            'title' => $title,
+            'content' => $content,
+            'category' => 'Aktivitas',
+        ]);
+
+        return redirect()->route('user.community.forum')->with('success', 'Aktivitas berhasil dibagikan ke komunitas!');
     }
 }

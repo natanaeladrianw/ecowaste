@@ -42,8 +42,6 @@ class StatisticsController extends Controller
         });
 
         // Keep backward compatibility for specific types (organik, anorganik)
-        // Note: For backward compatibility, we need to fetch all organic/anorganic types, not just the paginated ones.
-        // This assumes 'organik' and 'anorganik' are unique slugs and we want their total, not just what's on the current page.
         $organicType = WasteType::where('slug', 'organik')->first();
         $anorganicType = WasteType::where('slug', 'anorganik')->first();
 
@@ -79,6 +77,70 @@ class StatisticsController extends Controller
             ])
             ->get();
 
+        // Daily statistics for chart (last 7 days)
+        $dailyStats = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $dayWaste = Waste::whereDate('created_at', $date->toDateString())
+                ->sum(DB::raw('CASE WHEN unit = "gram" THEN amount / 1000 ELSE amount END'));
+
+            $dayUsers = User::whereDate('created_at', $date->toDateString())->count();
+
+            $dayTransactions = Waste::whereDate('created_at', $date->toDateString())->count();
+
+            $dailyStats->push([
+                'label' => $date->format('D, d M'),
+                'waste' => round($dayWaste, 2),
+                'users' => $dayUsers,
+                'transactions' => $dayTransactions,
+            ]);
+        }
+
+        // Weekly statistics for chart (last 4 weeks)
+        $weeklyStats = collect();
+        for ($i = 3; $i >= 0; $i--) {
+            $startOfWeek = now()->subWeeks($i)->startOfWeek();
+            $endOfWeek = now()->subWeeks($i)->endOfWeek();
+
+            $weekWaste = Waste::whereBetween('created_at', [$startOfWeek, $endOfWeek])
+                ->sum(DB::raw('CASE WHEN unit = "gram" THEN amount / 1000 ELSE amount END'));
+
+            $weekUsers = User::whereBetween('created_at', [$startOfWeek, $endOfWeek])->count();
+
+            $weekTransactions = Waste::whereBetween('created_at', [$startOfWeek, $endOfWeek])->count();
+
+            $weeklyStats->push([
+                'label' => $startOfWeek->format('d M') . ' - ' . $endOfWeek->format('d M'),
+                'waste' => round($weekWaste, 2),
+                'users' => $weekUsers,
+                'transactions' => $weekTransactions,
+            ]);
+        }
+
+        // Monthly statistics for chart (last 6 months)
+        $monthlyStats = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthWaste = Waste::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->sum(DB::raw('CASE WHEN unit = "gram" THEN amount / 1000 ELSE amount END'));
+
+            $monthUsers = User::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+
+            $monthTransactions = Waste::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+
+            $monthlyStats->push([
+                'label' => $date->format('M Y'),
+                'waste' => round($monthWaste, 2),
+                'users' => $monthUsers,
+                'transactions' => $monthTransactions,
+            ]);
+        }
+
         return view('admin.statistics.index', compact(
             'totalWaste',
             'organicWaste',
@@ -88,7 +150,10 @@ class StatisticsController extends Controller
             'totalUsers',
             'activeUsers',
             'newUsersThisMonth',
-            'categoryStats'
+            'categoryStats',
+            'dailyStats',
+            'weeklyStats',
+            'monthlyStats'
         ));
     }
 }

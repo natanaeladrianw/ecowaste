@@ -31,6 +31,36 @@
                 </div>
             </div>
             
+            @if(isset($challenge) && $challenge)
+            <!-- Challenge Info Alert -->
+            <div class="alert alert-success mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="me-3">
+                        <i class="bi bi-trophy-fill fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading mb-1">
+                            <i class="bi bi-flag-fill me-1"></i>Anda sedang mengikuti tantangan:
+                        </h6>
+                        <strong class="d-block mb-2">{{ $challenge->title }}</strong>
+                        <p class="mb-2 small">{{ $challenge->description }}</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary">
+                                <i class="bi bi-tag me-1"></i>{{ $challenge->targetCategory->name ?? 'Kategori' }}
+                            </span>
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-bullseye me-1"></i>Target: {{ $challenge->target_amount }} {{ $challenge->target_unit ?? 'kg' }}
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-star-fill me-1"></i>{{ $challenge->points_reward }} Poin
+                            </span>
+                        </div>
+                        <input type="hidden" form="wasteForm" name="challenge_id" value="{{ $challenge->id }}">
+                    </div>
+                </div>
+            </div>
+            @endif
+            
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title mb-0">
@@ -61,7 +91,7 @@
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" 
                                             data-points="{{ $category->points_per_kg }}"
-                                            {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ (old('category_id') == $category->id || (isset($selectedCategoryId) && $selectedCategoryId == $category->id)) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach

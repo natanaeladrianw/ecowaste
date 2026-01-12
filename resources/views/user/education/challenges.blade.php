@@ -62,15 +62,8 @@
                                 @endphp
                                 
                                 <div class="challenge-item mb-3">
-                                    <div class="card h-100 border-0 shadow-sm {{ $isCompleted ? 'border-success' : '' }}" 
+                                    <div class="card h-100 border-0 shadow-sm {{ $isCompleted ? 'border-success border-2' : '' }}" 
                                          style="transition: all 0.3s ease;">
-                                        @if($isCompleted)
-                                            <div class="position-absolute top-0 end-0 m-2">
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle-fill me-1"></i>Selesai
-                                                </span>
-                                            </div>
-                                        @endif
                                         
                                         <div class="card-body">
                                             <!-- Desktop Layout -->
@@ -93,11 +86,16 @@
                                                                     {{ \Carbon\Carbon::parse($challenge->end_date)->format('d M Y') }}
                                                                 </small>
                                                             </div>
-                                                            <div class="text-end ms-3">
-                                                                <span class="badge bg-success fs-6 mb-1">
+                                                            <div class="text-end ms-3 d-flex flex-column gap-1">
+                                                                <span class="badge bg-success fs-6">
                                                                     <i class="bi bi-star-fill me-1"></i>
                                                                     {{ $challenge->points_reward }} Poin
                                                                 </span>
+                                                                @if($isCompleted)
+                                                                    <span class="badge bg-primary">
+                                                                        <i class="bi bi-check-circle-fill me-1"></i>Selesai
+                                                                    </span>
+                                                                @endif
                                                             </div>
                                                         </div>
 
@@ -137,24 +135,21 @@
                                                             </div>
                                                         </div>
                                                         
-                                                        <div class="d-flex justify-content-end">
-                                                            @if(!$isCompleted)
-                                                                <form action="{{ route('user.education.challenges.complete', $challenge->id) }}" 
-                                                                      method="POST" 
-                                                                      onsubmit="return confirm('Apakah Anda yakin challenge ini sudah selesai?')">
-                                                                    @csrf
-                                                                    <button type="submit" 
-                                                                            class="btn btn-success"
-                                                                            {{ $progressPercentage < 100 ? 'disabled' : '' }}>
-                                                                        <i class="bi bi-check-circle me-1"></i>
-                                                                        {{ $progressPercentage >= 100 ? 'Klaim Reward' : 'Belum Selesai' }}
-                                                                    </button>
-                                                                </form>
-                                                            @else
-                                                                <button class="btn btn-outline-success" disabled>
-                                                                    <i class="bi bi-check-circle-fill me-1"></i>Reward Telah Diklaim
-                                                                </button>
+                                                        <div class="d-flex justify-content-end gap-2">
+                                                            {{-- All challenges in this section are NOT yet claimed (filtered by controller) --}}
+                                                            @if($challenge->target_category_id && $progressPercentage < 100)
+                                                                <a href="{{ route('user.waste.create', ['category_id' => $challenge->target_category_id, 'challenge_id' => $challenge->id]) }}" 
+                                                                   class="btn btn-primary">
+                                                                    <i class="bi bi-plus-circle me-1"></i>Mulai Tantangan
+                                                                </a>
                                                             @endif
+                                                            <button type="button" 
+                                                                    class="btn {{ $progressPercentage >= 100 ? 'btn-success' : 'btn-secondary' }}"
+                                                                    {{ $progressPercentage < 100 ? 'disabled' : '' }}
+                                                                    onclick="openClaimModal({{ $challenge->id }}, '{{ addslashes($challenge->title) }}', {{ $challenge->points_reward }}, '{{ route('user.education.challenges.complete', $challenge->id) }}')">
+                                                                <i class="bi bi-check-circle me-1"></i>
+                                                                {{ $progressPercentage >= 100 ? 'Klaim Reward' : 'Belum Selesai' }}
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -167,7 +162,19 @@
                                                         <i class="bi bi-trophy-fill text-success fs-5"></i>
                                                     </div>
                                                     <div class="flex-grow-1">
-                                                        <h6 class="card-title mb-1 fw-bold">{{ $challenge->title }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <h6 class="card-title mb-1 fw-bold">{{ $challenge->title }}</h6>
+                                                            <div class="d-flex flex-column gap-1 ms-2 flex-shrink-0">
+                                                                <span class="badge bg-success">
+                                                                    <i class="bi bi-star-fill me-1"></i>{{ $challenge->points_reward }} Poin
+                                                                </span>
+                                                                @if($isCompleted)
+                                                                    <span class="badge bg-primary">
+                                                                        <i class="bi bi-check-circle-fill me-1"></i>Selesai
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
                                                         <small class="text-muted d-block mb-2">
                                                             <i class="bi bi-calendar3 me-1"></i>
                                                             {{ \Carbon\Carbon::parse($challenge->start_date)->format('d M Y') }} - 
@@ -177,7 +184,7 @@
                                                             {{ $challenge->description }}
                                                         </p>
                                                         @if($challenge->targetCategory)
-                                                            <span class="badge bg-primary mb-2">
+                                                            <span class="badge bg-info mb-2">
                                                                 <i class="bi bi-tag me-1"></i>{{ $challenge->targetCategory->name }}
                                                             </span>
                                                         @endif
@@ -203,30 +210,24 @@
                                                     <small class="text-muted">{{ number_format($progressPercentage, 1) }}% selesai</small>
                                                 </div>
                                                 
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <small class="text-success fw-bold">
-                                                        <i class="bi bi-star-fill me-1"></i>
-                                                        {{ $challenge->points_reward }} Poin
-                                                    </small>
-                                                    @if(!$isCompleted)
-                                                        <form action="{{ route('user.education.challenges.complete', $challenge->id) }}" 
-                                                              method="POST" 
-                                                              onsubmit="return confirm('Apakah Anda yakin challenge ini sudah selesai?')"
-                                                              class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" 
-                                                                    class="btn btn-sm btn-success"
-                                                                    {{ $progressPercentage < 100 ? 'disabled' : '' }}
-                                                                    title="{{ $progressPercentage < 100 ? 'Progress belum mencapai 100%' : 'Klaim reward' }}">
-                                                                <i class="bi bi-check-circle me-1"></i>
-                                                                {{ $progressPercentage >= 100 ? 'Klaim Reward' : 'Belum Selesai' }}
-                                                            </button>
-                                                        </form>
-                                                    @else
-                                                        <span class="badge bg-success">
-                                                            <i class="bi bi-check-circle me-1"></i>Diselesaikan
-                                                        </span>
-                                                    @endif
+                                                <div class="d-flex justify-content-end align-items-center">
+                                                    {{-- All challenges in this section are NOT yet claimed (filtered by controller) --}}
+                                                    <div class="d-flex gap-2">
+                                                        @if($challenge->target_category_id && $progressPercentage < 100)
+                                                            <a href="{{ route('user.waste.create', ['category_id' => $challenge->target_category_id, 'challenge_id' => $challenge->id]) }}" 
+                                                               class="btn btn-sm btn-primary">
+                                                                <i class="bi bi-plus-circle me-1"></i>Mulai
+                                                            </a>
+                                                        @endif
+                                                        <button type="button" 
+                                                                class="btn btn-sm {{ $progressPercentage >= 100 ? 'btn-success' : 'btn-secondary' }}"
+                                                                {{ $progressPercentage < 100 ? 'disabled' : '' }}
+                                                                title="{{ $progressPercentage < 100 ? 'Progress belum mencapai 100%' : 'Klaim reward' }}"
+                                                                onclick="openClaimModal({{ $challenge->id }}, '{{ addslashes($challenge->title) }}', {{ $challenge->points_reward }}, '{{ route('user.education.challenges.complete', $challenge->id) }}')">
+                                                            <i class="bi bi-check-circle me-1"></i>
+                                                            {{ $progressPercentage >= 100 ? 'Klaim' : 'Belum Selesai' }}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -262,18 +263,32 @@
                                         <div class="card-body">
                                             <!-- Desktop Layout -->
                                             <div class="d-none d-md-block">
-                                                <div class="d-flex align-items-center mb-3">
+                                                <div class="d-flex align-items-start mb-3">
                                                     <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
                                                         <i class="bi bi-trophy-fill text-success fs-4"></i>
                                                     </div>
-                                                    <div>
-                                                        <h6 class="card-title mb-0 fw-bold text-success">{{ $achievement->title }}</h6>
-                                                        @if($achievement->completed_at)
-                                                            <small class="text-muted">
-                                                                <i class="bi bi-calendar-check me-1"></i>
-                                                                Selesai: {{ \Carbon\Carbon::parse($achievement->completed_at)->format('d M Y') }}
-                                                            </small>
-                                                        @endif
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <h6 class="card-title mb-0 fw-bold text-success">{{ $achievement->title }}</h6>
+                                                                @if($achievement->completed_at)
+                                                                    <small class="text-muted">
+                                                                        <i class="bi bi-calendar-check me-1"></i>
+                                                                        Selesai: {{ \Carbon\Carbon::parse($achievement->completed_at)->format('d M Y') }}
+                                                                    </small>
+                                                                @endif
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-1 ms-3">
+                                                                @if($achievement->challenge && $achievement->challenge->points_reward)
+                                                                    <span class="badge bg-warning text-dark">
+                                                                        <i class="bi bi-star-fill me-1"></i>{{ $achievement->challenge->points_reward }} Poin
+                                                                    </span>
+                                                                @endif
+                                                                <span class="badge bg-success">
+                                                                    <i class="bi bi-check-circle-fill me-1"></i>Diklaim
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 @if($achievement->description)
@@ -281,15 +296,22 @@
                                                         {{ $achievement->description }}
                                                     </p>
                                                 @endif
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <span class="badge bg-success fs-6">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Diselesaikan
+                                                @if($achievement->challenge && $achievement->challenge->targetCategory)
+                                                    <span class="badge bg-info mb-2">
+                                                        <i class="bi bi-tag me-1"></i>{{ $achievement->challenge->targetCategory->name }}
                                                     </span>
-                                                    @if($achievement->target_value)
-                                                        <small class="text-muted">
-                                                            Target: {{ number_format($achievement->target_value) }}
-                                                        </small>
-                                                    @endif
+                                                @endif
+                                                <div class="d-flex align-items-center justify-content-between mt-3">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-bullseye me-1"></i>
+                                                        Target tercapai: {{ number_format($achievement->target_value ?? 0) }} {{ $achievement->challenge->target_unit ?? 'kg' }}
+                                                    </small>
+                                                    <form action="{{ route('user.community.achievements.share', $achievement->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-share-fill me-1"></i>Share Pencapaian
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </div>
                                             
@@ -300,7 +322,19 @@
                                                         <i class="bi bi-trophy-fill text-success fs-5"></i>
                                                     </div>
                                                     <div class="flex-grow-1">
-                                                        <h6 class="card-title mb-1 fw-bold text-success">{{ $achievement->title }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <h6 class="card-title mb-1 fw-bold text-success">{{ $achievement->title }}</h6>
+                                                            <div class="d-flex flex-column gap-1 ms-2 flex-shrink-0">
+                                                                @if($achievement->challenge && $achievement->challenge->points_reward)
+                                                                    <span class="badge bg-warning text-dark">
+                                                                        <i class="bi bi-star-fill me-1"></i>{{ $achievement->challenge->points_reward }} Poin
+                                                                    </span>
+                                                                @endif
+                                                                <span class="badge bg-success">
+                                                                    <i class="bi bi-check-circle-fill me-1"></i>Diklaim
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                         @if($achievement->completed_at)
                                                             <small class="text-muted d-block mb-2">
                                                                 <i class="bi bi-calendar-check me-1"></i>
@@ -312,17 +346,24 @@
                                                                 {{ $achievement->description }}
                                                             </p>
                                                         @endif
+                                                        @if($achievement->challenge && $achievement->challenge->targetCategory)
+                                                            <span class="badge bg-info mb-2">
+                                                                <i class="bi bi-tag me-1"></i>{{ $achievement->challenge->targetCategory->name }}
+                                                            </span>
+                                                        @endif
                                                     </div>
                                                 </div>
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <span class="badge bg-success">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Diselesaikan
-                                                    </span>
-                                                    @if($achievement->target_value)
-                                                        <small class="text-muted">
-                                                            Target: {{ number_format($achievement->target_value) }}
-                                                        </small>
-                                                    @endif
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-bullseye me-1"></i>
+                                                        Target: {{ number_format($achievement->target_value ?? 0) }} {{ $achievement->challenge->target_unit ?? 'kg' }}
+                                                    </small>
+                                                    <form action="{{ route('user.community.achievements.share', $achievement->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-share-fill me-1"></i>Share
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -342,6 +383,60 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div class="modal fade" id="claimRewardModal" tabindex="-1" aria-labelledby="claimRewardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <!-- Modal Header with gradient -->
+            <div class="modal-header border-0 text-white py-4" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <div class="w-100 text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-trophy-fill" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4 class="modal-title fw-bold" id="claimRewardModalLabel">
+                        Klaim Reward
+                    </h4>
+                </div>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body text-center py-4 px-4">
+                <div class="mb-3">
+                    <i class="bi bi-gift-fill text-success" style="font-size: 2.5rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3" id="challengeTitle">Nama Tantangan</h5>
+                <p class="text-muted mb-3">
+                    Apakah Anda yakin ingin mengklaim reward untuk tantangan ini?
+                </p>
+                <div class="d-flex justify-content-center gap-2 mb-2">
+                    <span class="badge bg-success fs-6 px-3 py-2" id="rewardPoints">
+                        <i class="bi bi-star-fill me-1"></i>0 Poin
+                    </span>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Poin akan langsung ditambahkan ke akun Anda
+                </small>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer border-0 justify-content-center pb-4 gap-2">
+                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius: 10px;">
+                    <i class="bi bi-x-circle me-1"></i>Batal
+                </button>
+                <button type="button" class="btn btn-success px-4 py-2" id="confirmClaimBtn" style="border-radius: 10px;">
+                    <i class="bi bi-check-circle-fill me-1"></i>Ya, Klaim Reward
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="claimRewardForm" method="POST" style="display: none;">
+    @csrf
+</form>
 
 @push('styles')
 <style>
@@ -387,7 +482,63 @@
             margin-bottom: 1rem !important;
         }
     }
+    
+    /* Modal Animation */
+    #claimRewardModal .modal-content {
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            transform: scale(0.8) translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Modal hover effects */
+    #claimRewardModal .btn {
+        transition: all 0.3s ease;
+    }
+    
+    #claimRewardModal .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 </style>
 @endpush
-@endsection
 
+@push('scripts')
+<script>
+    let currentFormAction = '';
+    
+    function openClaimModal(challengeId, challengeTitle, rewardPoints, formAction) {
+        currentFormAction = formAction;
+        
+        // Update modal content
+        document.getElementById('challengeTitle').textContent = challengeTitle;
+        document.getElementById('rewardPoints').innerHTML = '<i class="bi bi-star-fill me-1"></i>' + rewardPoints + ' Poin';
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('claimRewardModal'));
+        modal.show();
+    }
+    
+    document.getElementById('confirmClaimBtn').addEventListener('click', function() {
+        if (currentFormAction) {
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('claimRewardModal'));
+            modal.hide();
+            
+            // Submit form
+            const form = document.getElementById('claimRewardForm');
+            form.action = currentFormAction;
+            form.submit();
+        }
+    });
+</script>
+@endpush
+@endsection

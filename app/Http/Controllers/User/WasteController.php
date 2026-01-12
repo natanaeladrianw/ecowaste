@@ -25,7 +25,7 @@ class WasteController extends Controller
         // Get total stats (all wastes, not just paginated)
         $totalWasteKg = Waste::where('user_id', Auth::id())
             ->get()
-            ->sum(function($w) {
+            ->sum(function ($w) {
                 return $w->unit === 'gram' ? $w->amount / 1000 : $w->amount;
             });
 
@@ -42,11 +42,22 @@ class WasteController extends Controller
         return view('user.waste.index', compact('wastes', 'totalWasteKg', 'totalPointsFromWaste', 'userTotalPoints', 'totalTransactions'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $categories = WasteCategory::where('is_active', true)->get();
         $bankSampah = BankSampah::where('is_active', true)->orderBy('name')->get();
-        return view('user.waste.create', compact('categories', 'bankSampah'));
+
+        // Get pre-selected category and challenge from query string
+        $selectedCategoryId = $request->query('category_id');
+        $challengeId = $request->query('challenge_id');
+
+        // Get challenge info if coming from a challenge
+        $challenge = null;
+        if ($challengeId) {
+            $challenge = \App\Models\Challenge::find($challengeId);
+        }
+
+        return view('user.waste.create', compact('categories', 'bankSampah', 'selectedCategoryId', 'challengeId', 'challenge'));
     }
 
     public function store(Request $request)
@@ -74,7 +85,7 @@ class WasteController extends Controller
         // Calculate points and get category
         $category = WasteCategory::findOrFail($request->category_id);
         $amountInKg = $request->unit === 'gram' ? $request->amount / 1000 : $request->amount;
-        $pointsEarned = (int)($amountInKg * $category->points_per_kg);
+        $pointsEarned = (int) ($amountInKg * $category->points_per_kg);
 
         // Get waste type name from category
         $wasteTypeName = $category->name; // Using category name as type
@@ -148,7 +159,7 @@ class WasteController extends Controller
         $oldStatus = $waste->status; // Save old status before update
         $category = WasteCategory::findOrFail($request->category_id);
         $amountInKg = $request->unit === 'gram' ? $request->amount / 1000 : $request->amount;
-        $newPoints = (int)($amountInKg * $category->points_per_kg);
+        $newPoints = (int) ($amountInKg * $category->points_per_kg);
 
         // Get waste type name from category
         $wasteTypeName = $category->name; // Using category name as type
@@ -157,7 +168,7 @@ class WasteController extends Controller
         $newStatus = $oldStatus;
         if ($oldStatus === 'approved' || $oldStatus === 'rejected') {
             $newStatus = 'pending';
-            
+
             // If previously approved, we need to handle points
             if ($oldStatus === 'approved') {
                 // Remove points that were added when approved
@@ -194,8 +205,8 @@ class WasteController extends Controller
             'metadata' => ['waste_id' => $waste->id],
         ]);
 
-        $message = ($newStatus === 'pending' && $oldStatus !== 'pending') 
-            ? 'Data sampah berhasil diupdate dan menunggu verifikasi ulang!' 
+        $message = ($newStatus === 'pending' && $oldStatus !== 'pending')
+            ? 'Data sampah berhasil diupdate dan menunggu verifikasi ulang!'
             : 'Data sampah berhasil diupdate!';
 
         return redirect()->route('user.waste.index')->with('success', $message);

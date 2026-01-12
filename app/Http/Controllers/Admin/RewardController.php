@@ -7,6 +7,8 @@ use App\Models\Reward;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+use Illuminate\Support\Str;
+
 class RewardController extends Controller
 {
     /**
@@ -44,11 +46,14 @@ class RewardController extends Controller
         ]);
 
         $data = $request->all();
-        
+
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('rewards', 'public');
+            $image = $request->file('image');
+            $filename = time() . '_' . Str::slug($request->name) . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/rewards'), $filename);
+            $data['image'] = 'uploads/rewards/' . $filename;
         }
-        
+
         $data['is_active'] = $request->has('is_active') ? true : false;
 
         Reward::create($data);
@@ -71,7 +76,7 @@ class RewardController extends Controller
     public function update(Request $request, string $id)
     {
         $reward = Reward::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -84,15 +89,23 @@ class RewardController extends Controller
         ]);
 
         $data = $request->all();
-        
+
         if ($request->hasFile('image')) {
             // Delete old image
             if ($reward->image) {
-                Storage::disk('public')->delete($reward->image);
+                if (file_exists(public_path($reward->image))) {
+                    unlink(public_path($reward->image));
+                } elseif (Storage::disk('public')->exists($reward->image)) {
+                    Storage::disk('public')->delete($reward->image);
+                }
             }
-            $data['image'] = $request->file('image')->store('rewards', 'public');
+
+            $image = $request->file('image');
+            $filename = time() . '_' . Str::slug($request->name) . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/rewards'), $filename);
+            $data['image'] = 'uploads/rewards/' . $filename;
         }
-        
+
         $data['is_active'] = $request->has('is_active') ? true : false;
 
         $reward->update($data);
@@ -106,12 +119,16 @@ class RewardController extends Controller
     public function destroy(string $id)
     {
         $reward = Reward::findOrFail($id);
-        
+
         // Delete image if exists
         if ($reward->image) {
-            Storage::disk('public')->delete($reward->image);
+            if (file_exists(public_path($reward->image))) {
+                unlink(public_path($reward->image));
+            } elseif (Storage::disk('public')->exists($reward->image)) {
+                Storage::disk('public')->delete($reward->image);
+            }
         }
-        
+
         $reward->delete();
 
         return redirect()->route('admin.rewards.index')->with('success', 'Reward berhasil dihapus!');

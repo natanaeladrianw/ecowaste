@@ -35,17 +35,27 @@ class EducationController extends Controller
     public function challenges()
     {
         $user = Auth::user();
-        
+
+        // Get all completed challenge source_ids for this user
+        $completedChallengeIds = Achievement::where('user_id', $user->id)
+            ->where('type', 'challenge')
+            ->where('is_completed', true)
+            ->whereNotNull('source_id')
+            ->pluck('source_id')
+            ->toArray();
+
+        // Get active challenges that user has NOT completed yet
         $activeChallenges = Challenge::where('is_active', true)
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now())
+            ->whereNotIn('id', $completedChallengeIds) // Exclude completed challenges by ID
             ->get();
 
-        // Get user's progress for each challenge
-        $challengesWithProgress = $activeChallenges->map(function($challenge) use ($user) {
+        // Get user's progress for each active (not completed) challenge
+        $challengesWithProgress = $activeChallenges->map(function ($challenge) use ($user) {
             $progress = Achievement::where('user_id', $user->id)
                 ->where('type', 'challenge')
-                ->where('title', $challenge->title)
+                ->where('source_id', $challenge->id)
                 ->first();
 
             return [
@@ -54,11 +64,18 @@ class EducationController extends Controller
             ];
         });
 
+        // Get completed challenges (with challenge relationship)
         $completedChallenges = Achievement::where('user_id', $user->id)
             ->where('type', 'challenge')
             ->where('is_completed', true)
-            ->with('challenge')
-            ->get();
+            ->orderBy('completed_at', 'desc')
+            ->get()
+            ->map(function ($achievement) {
+                // Load the related challenge data by source_id
+                $challenge = Challenge::find($achievement->source_id);
+                $achievement->challenge = $challenge;
+                return $achievement;
+            });
 
         return view('user.education.challenges', compact('challengesWithProgress', 'completedChallenges'));
     }
@@ -68,7 +85,7 @@ class EducationController extends Controller
         $challenge = Challenge::findOrFail($id);
         $user = Auth::user();
 
-        // Check if already completed
+        // Check if already completed (using source_id to match)
         $existing = Achievement::where('user_id', $user->id)
             ->where('type', 'challenge')
             ->where('source_id', $challenge->id)
@@ -92,7 +109,7 @@ class EducationController extends Controller
         }
 
         if ($completed) {
-            // Create achievement
+            // Create achievement with source_id
             Achievement::create([
                 'user_id' => $user->id,
                 'type' => 'challenge',

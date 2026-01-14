@@ -34,9 +34,9 @@ class CommunityController extends Controller
 
         ForumPost::create([
             'user_id' => Auth::id(),
-            'title' => $request->title,
-            'content' => $request->content,
-            'category' => $request->category,
+            'title' => $request->input('title'),
+            'content' => $request->input('content'),
+            'category' => $request->input('category'),
         ]);
 
         return back()->with('success', 'Post berhasil dibuat!');
@@ -80,8 +80,8 @@ class CommunityController extends Controller
         ForumComment::create([
             'post_id' => $id,
             'user_id' => Auth::id(),
-            'content' => $request->content,
-            'parent_id' => $request->parent_id,
+            'content' => $request->input('content'),
+            'parent_id' => $request->input('parent_id'),
         ]);
 
         // Update post comments count

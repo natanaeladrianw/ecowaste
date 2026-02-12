@@ -138,7 +138,7 @@
 
                         <!-- Pagination -->
                         <div class="mt-4">
-                            {{ $wasteTypeStats->withQueryString()->links('pagination::bootstrap-5') }}
+                            {{ $wasteTypes->withQueryString()->links('pagination::bootstrap-5') }}
                         </div>
                     @else
                         @if(request('search'))

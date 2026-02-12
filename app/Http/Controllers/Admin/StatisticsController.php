@@ -29,7 +29,8 @@ class StatisticsController extends Controller
             ->paginate(5);
 
         // Calculate waste statistics for each waste type dynamically
-        $wasteTypeStats = collect($wasteTypes->items())->map(function ($wasteType) use ($totalWaste) {
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $wasteTypes */
+        $wasteTypeStats = $wasteTypes->getCollection()->map(function ($wasteType) use ($totalWaste) {
             $wasteAmount = Waste::query()->whereHas('category', function ($query) use ($wasteType) {
                 $query->where('waste_type', $wasteType->slug);
             })->sum(DB::raw('CASE WHEN unit = "gram" THEN amount / 1000 ELSE amount END'));
